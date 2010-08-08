@@ -173,6 +173,7 @@ module PortableContacts
     
     ENTRY_FIELDS = SINGULAR_FIELDS + PLURAL_FIELDS
     
+    NAME_FIELDS = [:formatted, :family_name, :given_name, :middle_name, :honorific_prefix, :honorific_suffix]
     
     def [](key)
       @data[key.to_s.camelize(:lower)]
@@ -182,6 +183,8 @@ module PortableContacts
     def email
       @email||= begin
         (emails.detect {|e| e['primary']=='true '} || emails.first)["value"] unless emails.empty?
+      rescue
+        nil
       end
     end
     
@@ -189,17 +192,33 @@ module PortableContacts
       self["id"]
     end
     
+    def thumbnail_url
+      @thumbnail_url||= begin
+        thumbnail = self['thumbnailUrl'] || (photos.detect {|p| p['primary']=='true '} || photos.first)["value"]
+        thumbnail.blank? ? nil : thumbnail
+      rescue
+        nil
+      end
+    end
+    
     protected
     
     def method_missing(method,*args)
       if respond_to?(method)
         return self[method]
+      elsif NAME_FIELDS.include?(method)
+        if self['name']
+          return self['name'][method.to_s.camelize(:lower)]
+        else
+          return nil
+        end
       end 
       super
     end
     
     def respond_to?(method)
-      ENTRY_FIELDS.include?(method) || @data.has_key?(method.to_s.camelize(:lower)) || super
+      ENTRY_FIELDS.include?(method) || 
+        (@data && @data.has_key?(method.to_s.camelize(:lower))) || super
     end
   end
   
