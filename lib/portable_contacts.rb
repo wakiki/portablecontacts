@@ -158,7 +158,10 @@ module PortableContacts
       # OpenSocial singular fields
       :about_me, :body_type, :current_location, :drinker, :ethnicity, :fashion, :happiest_when, 
       :humor, :living_arrangement, :looking_for, :profile_song, :profile_video, :relationship_status, 
-      :religion, :romance, :scared_of, :sexual_orientation, :smoker, :status
+      :religion, :romance, :scared_of, :sexual_orientation, :smoker, :status,
+      
+      # Google singular fields
+      :thumbnail_url
     ]
     PLURAL_FIELDS = [ 
       # Portable contacts plural fields
@@ -182,9 +185,7 @@ module PortableContacts
     # primary email address
     def email
       @email||= begin
-        (emails.detect {|e| e['primary']=='true '} || emails.first)["value"] unless emails.empty?
-      rescue
-        nil
+        (emails.detect {|e| e['primary']=='true '} || emails.first)["value"] unless emails.blank?
       end
     end
     
@@ -193,12 +194,7 @@ module PortableContacts
     end
     
     def thumbnail_url
-      @thumbnail_url||= begin
-        thumbnail = self['thumbnailUrl'] || (photos.detect {|p| p['primary']=='true '} || photos.first)["value"]
-        thumbnail.blank? ? nil : thumbnail
-      rescue
-        nil
-      end
+      self['thumbnailUrl'].blank? ? nil : self['thumbnailUrl']
     end
     
     protected
@@ -207,11 +203,7 @@ module PortableContacts
       if respond_to?(method)
         return self[method]
       elsif NAME_FIELDS.include?(method)
-        if self['name']
-          return self['name'][method.to_s.camelize(:lower)]
-        else
-          return nil
-        end
+        return self[:name] ? self[:name][method.to_s.camelize(:lower)] : nil
       end 
       super
     end
